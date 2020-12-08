@@ -7,12 +7,12 @@ with open(os.path.join(sys.path[0], 'input.txt'), 'r') as in_file:
 ALL_BAGS = {}
 
 class Bag:
-
     def __init__(self, line):
         self.color = ""
         self.can_contain = {}
         self.line = line
         self.parse(line)
+        self.all_bags_count = -1
 
     def parse(self, line):
         line = line.strip()
@@ -28,9 +28,7 @@ class Bag:
                 continue
             sub_parts = p.split(' ', 1)
             cnt = int(sub_parts[0].strip())
-            col = sub_parts[1].replace(" bags", "")
-            col = col.replace(" bag", "")
-            col = col.replace(".", "")
+            col = sub_parts[1].replace(" bags", "").replace(" bag", "").replace(".", "")
             self.can_contain[col] = cnt
 
     def print(self):
@@ -50,19 +48,18 @@ class Bag:
             return False
 
     def bag_cnt(self):
-        total = 0
-        for k, v in self.can_contain.items():
-            total += v
-            total += v*(ALL_BAGS[k].bag_cnt())
+        if self.all_bags_count < 0:
+            total = 0
+            for k, v in self.can_contain.items():
+                total += v
+                total += v * (ALL_BAGS[k].bag_cnt())
 
-        return total
-
-
+            self.all_bags_count = total
+        return self.all_bags_count
 
 for line in lines:
     bag = Bag(line)
     ALL_BAGS[bag.color] = bag
-
 
 cnt = 0
 for b in ALL_BAGS.values():
@@ -70,7 +67,6 @@ for b in ALL_BAGS.values():
         cnt += 1
 
 print(cnt)
-
 
 shiny = ALL_BAGS["shiny gold"]
 print(shiny.bag_cnt())
