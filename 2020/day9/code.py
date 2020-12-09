@@ -1,5 +1,8 @@
 import os, sys
 import collections, itertools
+import time
+
+
 
 input = []
 with open(os.path.join(sys.path[0], 'input.txt'), 'r') as in_file:
@@ -36,14 +39,18 @@ for line in input:
     all_nums.append(int(line))
 
 
+start = time.time()
+
+broken=False
 for i in range(len(all_nums) - 2):
-    for j in range(i + 2, len(all_nums) -1):
-        sub = all_nums[i:j]
+    cur_sum = all_nums[i]
 
-        sum = 0
-        for x in sub:
-            sum+=x
-
-        if sum == current_num:
+    for j in range(i + 1, len(all_nums) -1):
+        cur_sum += all_nums[j]
+        if cur_sum == current_num:
+            sub = all_nums[i:j]
             print(min(sub) + max(sub))
             exit(0)
+
+        if cur_sum > current_num:
+            break
