@@ -1,13 +1,17 @@
 import os, sys
+from copy import deepcopy
 
 input = []
 with open(os.path.join(sys.path[0], 'input.txt'), 'r') as in_file:
     input = in_file.readlines()
 
+JMP = "jmp"
+NOP = "nop"
+ACC = "acc"
+FINISHED = 0
+LOOP = 1
+OUT_OF_BOUNDS = 2
 class Instruction:
-    JMP = "jmp"
-    NOP = "nop"
-    ACC = "acc"
     def __init__(self, inp):
         parts = inp.strip().split(" ")
         self.opcode = parts[0]
@@ -24,10 +28,6 @@ class Instruction:
         return f"{self.opcode} {self.val}"
 
 class Machine:
-    FINISHED = 0
-    LOOP = 1
-    OUT_OF_BOUNDS = 2
-
     def __init__(self, input):
         self.instructions = []
         self.visited = set()
@@ -37,26 +37,28 @@ class Machine:
         for line in input:
             self.instructions.append(Instruction(line))
 
-    def run(self):
+    def run(self, start_pos=0, start_val=0):
         self.reset()
+        self.pos = start_pos
+        self.acc_val = start_val
         while True:
             if self.pos == len(self.instructions):
-                return Machine.FINISHED
+                return FINISHED
 
             if self.pos > len(self.instructions):
-                return Machine.OUT_OF_BOUNDS
+                return OUT_OF_BOUNDS
 
             if self.pos in self.visited:
-                return Machine.LOOP
+                return LOOP
 
             ins = self.instructions[self.pos]
             
             self.visited.add(self.pos)
 
-            if ins.opcode == Instruction.ACC:
+            if ins.opcode == ACC:
                 self.acc_val += ins.val
                 self.pos += 1
-            elif ins.opcode == Instruction.JMP:
+            elif ins.opcode == JMP:
                 self.pos += ins.val
             else:
                 self.pos += 1
@@ -79,18 +81,40 @@ class Machine:
 
 machine = Machine(input)
 machine.run()
-# part1
+print("day 8/1:")
 print(machine.acc_val)
 
 for switch_pos in range(len(input)):
     # print(switch_pos)
-    if not machine.switch_ins(switch_pos, Instruction.JMP, Instruction.NOP):
+    if not machine.switch_ins(switch_pos, JMP, NOP):
         # no need to run if no switch was made
         continue
 
-    if machine.run() == Machine.FINISHED:
+    if machine.run() == FINISHED:
+        print("day 8/2:")
         print(machine.acc_val)
+        machine.switch_ins(switch_pos, JMP, NOP) # not needed, just for demos below
         break
     else:
         # undo the switch
-        machine.switch_ins(switch_pos, Instruction.JMP, Instruction.NOP)
+        machine.switch_ins(switch_pos, JMP, NOP)
+
+
+# from which instruction it should start to reach value 50000
+for i in range(len(input)):
+    res = machine.run(i)
+    if res == FINISHED and machine.acc_val == 50000:
+        print("day 9/1:")
+        print(res)
+        break
+
+# which instruction to remove to make it halt
+for i in range(len(input)):
+    copymac = deepcopy(machine)
+
+    copymac.instructions.pop(i)
+    if copymac.run() == FINISHED:
+        print("day 9/2:")
+        print(i)
+        print(copymac.acc_val)
+        
