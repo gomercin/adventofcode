@@ -10,7 +10,8 @@ size = len(input)
 
 for y, row in enumerate(input):
     for x, ch in enumerate(row.strip()):
-        cube[(x, y, 0, 0)] = ch
+        if ch == "#":
+            cube[(x, y, 0, 0)] = 1
 
 new_cube = {}
 
@@ -18,9 +19,9 @@ smin = -1
 smax = size
 
 def active_count(x, y, z, w):
-    n = [-1, 0 , 1]
+    n = [-1, 0, 1]
     cnt = 0
-    for xd  in n:
+    for xd in n:
         xi = x + xd
         for yd in n:
             yi = y + yd
@@ -32,9 +33,8 @@ def active_count(x, y, z, w):
                         continue
 
                     neigh = cube.get((xi, yi, zi, wi))
-                    if neigh == "#":
+                    if neigh:
                         cnt += 1
-
     return cnt
 
 def pc(c):
@@ -46,7 +46,7 @@ def pc(c):
                 for x in range(smin, smax):
                     c = cube.get((x,y,z,w))
                     if c:
-                        row += c
+                        row += "#"
                     else:
                         row += "."
                 print(row)
@@ -63,10 +63,13 @@ def cycle():
             for z in range(smin, smax):
                 for w in range(smin, smax):
                     active_neighbors = active_count(x, y, z, w)
-                    c = cube.get((x, y, z, w))
-                    if active_neighbors == 3 or (c == '#' and active_neighbors == 2):
-                        tmp_cube[(x, y, z, w)] = '#'
+                    if active_neighbors == 3: 
+                        tmp_cube[(x, y, z, w)] = 1
                         count += 1
+                    elif active_neighbors == 2:
+                        if cube.get((x, y, z, w)):
+                            tmp_cube[(x, y, z, w)] = 1
+                            count += 1
 
     cube = tmp_cube
     return count
