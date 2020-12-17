@@ -10,36 +10,40 @@ size = len(input)
 
 for y, row in enumerate(input):
     for x, ch in enumerate(row.strip()):
-        cube[(x,y,0, 0)] = ch
+        cube[(x, y, 0, 0)] = ch
 
 new_cube = {}
 
-LIM = size + 1
-
+smin = -1
+smax = size
 
 def active_count(x, y, z, w):
     n = [-1, 0 , 1]
     cnt = 0
     for xd  in n:
+        xi = x + xd
         for yd in n:
+            yi = y + yd
             for zd in n:
+                zi = z + zd
                 for wd in n:
-                    if xd ==0 and yd ==0 and zd ==0 and wd == 0:
+                    wi = w + wd
+                    if xd == 0 and yd == 0 and zd == 0 and wd == 0:
                         continue
 
-                    neigh = cube.get((x + xd, y + yd, z+zd, w + wd))
-                    if neigh and neigh == "#":
-                        cnt +=1
+                    neigh = cube.get((xi, yi, zi, wi))
+                    if neigh == "#":
+                        cnt += 1
 
     return cnt
 
 def pc(c):
-    for w in range(-LIM, LIM):
-        for z in range(-LIM, LIM):
+    for w in range(smin, smax):
+        for z in range(smin, smax):
             print(f"z={z}")
-            for y in range(-LIM, LIM):
+            for y in range(smin, smax):
                 row = ""
-                for x in range(-LIM, LIM):
+                for x in range(smin, smax):
                     c = cube.get((x,y,z,w))
                     if c:
                         row += c
@@ -49,39 +53,28 @@ def pc(c):
             print("")
 
 
-cycle_count = 0
 def cycle():
-    import copy
-    global cube, cycle_count
-    new_cube = copy.deepcopy(cube)
+    global cube
+    tmp_cube = {}
 
-    for x in range(-LIM, LIM):
-        for y in range(-LIM, LIM):
-            for z in range(-LIM, LIM):
-                for w in range(-LIM, LIM):
+    count = 0
+    for x in range(smin, smax):
+        for y in range(smin, smax):
+            for z in range(smin, smax):
+                for w in range(smin, smax):
                     active_neighbors = active_count(x, y, z, w)
-                    c= cube.get((x, y, z, w))
-                    if not c or c == '.':
-                        if active_neighbors == 3:
-                            new_cube[(x,y,z, w)] = '#'
-                    else:
-                        if active_neighbors<2 or active_neighbors >3:
-                            new_cube[(x,y,z, w)] = '.'
+                    c = cube.get((x, y, z, w))
+                    if active_neighbors == 3 or (c == '#' and active_neighbors == 2):
+                        tmp_cube[(x, y, z, w)] = '#'
+                        count += 1
 
-    cube = copy.deepcopy(new_cube)
-    # pc(cube)
+    cube = tmp_cube
+    return count
 
+count = 0
 for _ in range(6):
-    cycle()
-    LIM+=1
+    count = cycle()
+    smin -= 1
+    smax += 1
 
-cnt = 0
-for x in range(-LIM, LIM):
-    for y in range(-LIM, LIM):
-        for z in range(-LIM, LIM):
-            for w in range(-LIM, LIM):
-                c = cube.get((x,y,z, w))
-                if c and c == '#':
-                    cnt +=1
-
-print(cnt)
+print(count)
