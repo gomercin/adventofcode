@@ -4,16 +4,14 @@ input = []
 with open(os.path.join(sys.path[0], 'input'), 'r') as in_file:
     input = in_file.readlines()
 
-cube = {}
+cube = set()
 
 size = len(input)
 
 for y, row in enumerate(input):
     for x, ch in enumerate(row.strip()):
         if ch == "#":
-            cube[(x, y, 0, 0)] = 1
-
-new_cube = {}
+            cube.add((x, y, 0, 0))
 
 smin = -1
 smax = size
@@ -32,8 +30,7 @@ def active_count(x, y, z, w):
                     if xd == 0 and yd == 0 and zd == 0 and wd == 0:
                         continue
 
-                    neigh = cube.get((xi, yi, zi, wi))
-                    if neigh:
+                    if (xi, yi, zi, wi) in cube:
                         cnt += 1
     return cnt
 
@@ -44,8 +41,7 @@ def pc(c):
             for y in range(smin, smax):
                 row = ""
                 for x in range(smin, smax):
-                    c = cube.get((x,y,z,w))
-                    if c:
+                    if (x,y,z,w) in cube:
                         row += "#"
                     else:
                         row += "."
@@ -55,29 +51,24 @@ def pc(c):
 
 def cycle():
     global cube
-    tmp_cube = {}
+    tmp_cube = set()
 
-    count = 0
     for x in range(smin, smax):
         for y in range(smin, smax):
             for z in range(smin, smax):
                 for w in range(smin, smax):
                     active_neighbors = active_count(x, y, z, w)
                     if active_neighbors == 3: 
-                        tmp_cube[(x, y, z, w)] = 1
-                        count += 1
+                        tmp_cube.add((x, y, z, w))
                     elif active_neighbors == 2:
-                        if cube.get((x, y, z, w)):
-                            tmp_cube[(x, y, z, w)] = 1
-                            count += 1
+                        if (x, y, z, w) in cube:
+                            tmp_cube.add((x, y, z, w))
 
     cube = tmp_cube
-    return count
 
-count = 0
 for _ in range(6):
-    count = cycle()
+    cycle()
     smin -= 1
     smax += 1
 
-print(count)
+print(len(cube))
