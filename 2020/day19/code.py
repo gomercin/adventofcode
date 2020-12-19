@@ -1,7 +1,7 @@
 import os, sys
 
 input = []
-with open(os.path.join(sys.path[0], 'test1'), 'r') as in_file:
+with open(os.path.join(sys.path[0], 'test'), 'r') as in_file:
     input = in_file.readlines()
 
 rules = []
@@ -70,40 +70,42 @@ class Rule:
         from itertools import product
         return list(product(*subvars))
 
-    def isvalid(self, msg, i):
-        # print(f"checking {msg[i:]}, for rule{self.id}")
-        # ababbb, 0
-        if self.char:
-            if msg[i] == self.char:
-                # print("it held : " + self.char)
-                return True, i + 1
+    def isvalid(self, msg, potential_is):
+        print(f"checking {msg}, for rule{self.id}, for potentials: {potential_is}")
+        all_potentials = []
+        for i in potential_is:
+            if i >= len(msg):
+                continue
+            # ababbb, 0
+            if self.char:
+                if msg[i] == self.char:
+                    # print("it held : " + self.char)
+                    all_potentials.append(i + 1)
             else:
-                # print("failed1 : "  + self.char)
-                return False, i + 1
-        else:
-            current_i = i
-            potential_is = []
-            
-            failed = False
-            for ruleset in self.rules:
-                failed = False
-                # print(ruleset)
                 current_i = i
-                failedrule = -1
-                for rule in ruleset:
-                    res, current_i = rule_map[rule].isvalid(msg, current_i)
-                    if not res:
-                        failedrule = rule
-                        failed = True
-                        break
-
-                if current_i < len(msg):
-                    potential_is.append(current_i)
                 
+                hoypots = []
+                # i'den baslarsak, senin kurallardan tutan var mi?
+                for ruleset in self.rules:
 
-            print(potential_is)
+                    subpotentials = [i]
+                    newpotentials = []
+                    # print(ruleset)
+                    for rule in ruleset:
+                        for si in subpotentials:
+                            res, rule_is = rule_map[rule].isvalid(msg, [si])
+                            if res:
+                                newpotentials.extend(rule_is)
+
+                        subpotentials = newpotentials
+                        newpotentials = []
+
+                    all_potentials.extend(subpotentials)
+                    
+
+        print(all_potentials)
             # print(f"{'failed' if failed else 'success'} {msg[i:]}, for rule{self.id}, rem: {msg[current_i:]}")
-            return len(potential_is) > 0, potential_is
+        return len(all_potentials) > 0, all_potentials
 
 
 for r in rules:
@@ -117,13 +119,14 @@ for r in rules:
 
     rule_map[rule.id] = rule
 
-print(rule_map[0].isvalid("aaaaab", 0))
+print(rule_map[0].isvalid("abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa", [0]))
 exit(0)
 cnt = 0
 for msg in messages:
-    res, i = rule_map[0].isvalid(msg, 0)
-    if res and i == len(msg):
-       cnt += 1
+    res, i = rule_map[0].isvalid(msg, [0])
+    if res:
+        print(msg)
+        cnt += 1
 
 
 print(cnt)
