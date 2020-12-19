@@ -1,7 +1,7 @@
 import os, sys
 
 input = []
-with open(os.path.join(sys.path[0], 'input'), 'r') as in_file:
+with open(os.path.join(sys.path[0], 'test1'), 'r') as in_file:
     input = in_file.readlines()
 
 rules = []
@@ -38,16 +38,24 @@ class Rule:
         return f"{self.id}, {self.char}, {self.rules}"
 
     def parse(self):
-        subrules_str = self.ruledef.split('|')
+        if self.id == 8:
+            for i in range(1, 10):
+                self.rules.append([42] * i)
+        elif self.id == 11:
+            # 11: 42 31 | 42 11 31
+            for i in range(1, 10):
+                self.rules.append([42] * i + [31] * i)
+        else:
+            subrules_str = self.ruledef.split('|')
 
-        for sub_str in subrules_str:
-            nexts_str = sub_str.split()
-            subrules = []
-            for n in nexts_str:
-                n = n.strip()
-                subrules.append(int(n))
+            for sub_str in subrules_str:
+                nexts_str = sub_str.split()
+                subrules = []
+                for n in nexts_str:
+                    n = n.strip()
+                    subrules.append(int(n))
 
-            self.rules.append(subrules)
+                self.rules.append(subrules)
 
     def get_variations(self):
         if self.char:
@@ -74,6 +82,8 @@ class Rule:
                 return False, i + 1
         else:
             current_i = i
+            potential_is = []
+            
             failed = False
             for ruleset in self.rules:
                 failed = False
@@ -87,43 +97,13 @@ class Rule:
                         failed = True
                         break
 
-                if not failed:
-                    return True, current_i
+                if current_i < len(msg):
+                    potential_is.append(current_i)
                 
 
+            print(potential_is)
             # print(f"{'failed' if failed else 'success'} {msg[i:]}, for rule{self.id}, rem: {msg[current_i:]}")
-            return not failed, current_i
-
-
-
-
-
-
-                    
-
-
-"""
-0: 4 1 5
-1: 2 3 | 3 2
-2: 4 4 | 5 5
-3: 4 5 | 5 4
-4: "a"
-5: "b"
-
-
-ababbb
-
-4
-babbb, 1 5
-
-babbb 23  5
-      32  5
-
-
-
-"""
-
-
+            return len(potential_is) > 0, potential_is
 
 
 for r in rules:
@@ -137,6 +117,8 @@ for r in rules:
 
     rule_map[rule.id] = rule
 
+print(rule_map[0].isvalid("aaaaab", 0))
+exit(0)
 cnt = 0
 for msg in messages:
     res, i = rule_map[0].isvalid(msg, 0)
