@@ -23,14 +23,16 @@ for line in input:
         messages.append(line)
 
 
-rule_map = {}
+rule_map_p1 = {}
+rule_map_p2 = {}
 
 class Rule:
-    def __init__(self, id, char=None, ruledef=None):
+    def __init__(self, id, char=None, ruledef=None, part=1):
         self.id = id
         self.char = char
         self.ruledef = ruledef
         self.rules = []
+        self.part = part
         if self.ruledef:
             self.parse()
 
@@ -38,10 +40,10 @@ class Rule:
         return f"{self.id}, {self.char}, {self.rules}"
 
     def parse(self):
-        if self.id == 8:
+        if self.part == 2 and self.id == 8:
             for i in range(1, 10):
                 self.rules.append([42] * i)
-        elif self.id == 11:
+        elif self.part == 2 and self.id == 11:
             # 11: 42 31 | 42 11 31
             for i in range(1, 10):
                 self.rules.append([42] * i + [31] * i)
@@ -57,22 +59,10 @@ class Rule:
 
                 self.rules.append(subrules)
 
-    def get_variations(self):
-        if self.char:
-            return [self.char]
-        
-        subvars = []
-
-        for subrule in self.rules:
-            for id in subrule:
-                subvars.append(rule_map[id].get_variations())
-            
-        from itertools import product
-        return list(product(*subvars))
-
     def isvalid(self, msg, potential_is, depth):
         depth += 1
-        indent = '  ' * depth
+        current_map = rule_map_p1 if self.part == 1 else rule_map_p2
+        # indent = '  ' * depth
         # print(f"{indent}checking {msg}, for rule{self.id}, for potentials: {potential_is}")
         all_potentials = []
         for i in potential_is:
@@ -84,10 +74,6 @@ class Rule:
                     # print("it held : " + self.char)
                     all_potentials.append(i + 1)
             else:
-                current_i = i
-                
-                hoypots = []
-                # i'den baslarsak, senin kurallardan tutan var mi?
                 for ruleset in self.rules:
 
                     subpotentials = [i]
@@ -96,7 +82,7 @@ class Rule:
                     for rule in ruleset:
                         # print(f"{indent} subpotentials " + str(subpotentials))
                         for si in subpotentials:
-                            res, rule_is = rule_map[rule].isvalid(msg, [si], depth)
+                            res, rule_is = current_map[rule].isvalid(msg, [si], depth)
                             # print(f"{indent} rules_is : {rule_is}")
                             if res:
                                 newpotentials.extend(rule_is)
@@ -115,21 +101,29 @@ class Rule:
 for r in rules:
     id, ruledef = r.split(":")
     
-    rule = None
+    rule1 = None
+    rule2 = None
     if '"' in ruledef:
-        rule = Rule(int(id.strip()), char = ruledef.strip().replace('"', ""))
+        rule1 = Rule(int(id.strip()), char = ruledef.strip().replace('"', ""), part=1)
+        rule2 = Rule(int(id.strip()), char = ruledef.strip().replace('"', ""), part=2)
     else:
-        rule = Rule(int(id.strip()), ruledef=ruledef)
+        rule1 = Rule(int(id.strip()), ruledef=ruledef, part=1)
+        rule2 = Rule(int(id.strip()), ruledef=ruledef, part=2)
 
-    rule_map[rule.id] = rule
+    rule_map_p1[rule1.id] = rule1
+    rule_map_p2[rule2.id] = rule2
 
-# print(rule_map[0].isvalid("abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa", [0], 0))
-# exit(0)
-cnt = 0
+cnt_p1 = 0
+cnt_p2 = 0
 for msg in messages:
-    res, i = rule_map[0].isvalid(msg, [0], 0)
+    res, i = rule_map_p1[0].isvalid(msg, [0], 0)
     if res and i[0] == len(msg):
-        cnt += 1
+        cnt_p1 += 1
+
+    res, i = rule_map_p2[0].isvalid(msg, [0], 0)
+    if res and i[0] == len(msg):
+        cnt_p2 += 1
 
 
-print(cnt)
+print(cnt_p1)
+print(cnt_p2)
