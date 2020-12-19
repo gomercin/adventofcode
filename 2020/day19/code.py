@@ -1,7 +1,7 @@
 import os, sys
 
 input = []
-with open(os.path.join(sys.path[0], 'test'), 'r') as in_file:
+with open(os.path.join(sys.path[0], 'input'), 'r') as in_file:
     input = in_file.readlines()
 
 rules = []
@@ -70,8 +70,10 @@ class Rule:
         from itertools import product
         return list(product(*subvars))
 
-    def isvalid(self, msg, potential_is):
-        print(f"checking {msg}, for rule{self.id}, for potentials: {potential_is}")
+    def isvalid(self, msg, potential_is, depth):
+        depth += 1
+        indent = '  ' * depth
+        # print(f"{indent}checking {msg}, for rule{self.id}, for potentials: {potential_is}")
         all_potentials = []
         for i in potential_is:
             if i >= len(msg):
@@ -92,8 +94,10 @@ class Rule:
                     newpotentials = []
                     # print(ruleset)
                     for rule in ruleset:
+                        # print(f"{indent} subpotentials " + str(subpotentials))
                         for si in subpotentials:
-                            res, rule_is = rule_map[rule].isvalid(msg, [si])
+                            res, rule_is = rule_map[rule].isvalid(msg, [si], depth)
+                            # print(f"{indent} rules_is : {rule_is}")
                             if res:
                                 newpotentials.extend(rule_is)
 
@@ -103,7 +107,7 @@ class Rule:
                     all_potentials.extend(subpotentials)
                     
 
-        print(all_potentials)
+        # print(f"{indent} {all_potentials}")
             # print(f"{'failed' if failed else 'success'} {msg[i:]}, for rule{self.id}, rem: {msg[current_i:]}")
         return len(all_potentials) > 0, all_potentials
 
@@ -119,13 +123,12 @@ for r in rules:
 
     rule_map[rule.id] = rule
 
-print(rule_map[0].isvalid("abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa", [0]))
-exit(0)
+# print(rule_map[0].isvalid("abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa", [0], 0))
+# exit(0)
 cnt = 0
 for msg in messages:
-    res, i = rule_map[0].isvalid(msg, [0])
-    if res:
-        print(msg)
+    res, i = rule_map[0].isvalid(msg, [0], 0)
+    if res and i[0] == len(msg):
         cnt += 1
 
 
