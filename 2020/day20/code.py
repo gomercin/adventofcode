@@ -4,7 +4,7 @@ from itertools import permutations
 TOP, LEFT, BOTTOM, RIGHT = 0, 1, 2, 3
 
 input = []
-with open(os.path.join(sys.path[0], 'sample'), 'r') as in_file:
+with open(os.path.join(sys.path[0], 'input'), 'r') as in_file:
     input = in_file.readlines()
 
 input.append("")
@@ -13,7 +13,7 @@ class Tile:
         self.id = int(lines[0].split(" ")[1][:-1])
         self.lines = lines
 
-        self.edge_variations = set()
+        self.edge_variations = []
         #(neighbor tile id, variation id)  -> this.variation_id
         self.top_connects = {}
         self.bottom_connects = {}
@@ -43,19 +43,22 @@ class Tile:
             if self.lines[i][-1] == "#":
                 right |= 0x1
 
-        # normal
-        self.edge_variations.add((top, left, bottom, right))
-        # flipped horizontal
-        self.edge_variations.add((bottom, self.reverse(left), top, self.reverse(right)))
-        # flipped vertical
-        self.edge_variations.add((self.reverse(bottom), left, self.reverse(top), right))
-
+        rotations = [(top, left, bottom, right)]
         tmp_top, tmp_left, tmp_bottom, tmp_right = top, left, bottom, right
         for _ in range(3):
             new_var = (tmp_right, self.reverse(tmp_top), tmp_left, self.reverse(tmp_bottom))
-            self.edge_variations.add(new_var)
+            rotations.append(new_var)
             tmp_top, tmp_left, tmp_bottom, tmp_right = new_var
 
+        self.edge_variations.extend(rotations)
+
+        for rot in rotations:
+            tmp_top, tmp_left, tmp_bottom, tmp_right = rot[0], rot[1], rot[2], rot[3]
+            # flip rotation horizontal
+            self.edge_variations.append((tmp_bottom, self.reverse(tmp_left), tmp_top, self.reverse(tmp_right)))
+
+            # flip rotation vertical:
+            self.edge_variations.append((self.reverse(tmp_bottom), tmp_left, self.reverse(tmp_top), tmp_right))
 
 
     def reverse(self, num):
@@ -165,12 +168,14 @@ tile_ids = all_tiles.keys()
 # print(all_tile_permutations)
 
 from math import sqrt
-SIZE = sqrt(len(all_tiles))
-def canbefilled(grid, index, unused_tiles):
+from copy import deepcopy
+SIZE = int(sqrt(len(all_tiles)))
+def canbefilled__(grid, index, unused_tiles):
+    print("checking grid: " + str(grid), SIZE)
     new_index = None
     if index[1] == SIZE - 1: # rightmost, try next row
         if index[0] == SIZE - 1: # means it is filled:
-            return grid
+            return deepcopy(grid)
         new_index = (index[0] + 1, 0)
     else:
         new_index = (index[0], index[1] + 1)
@@ -178,6 +183,7 @@ def canbefilled(grid, index, unused_tiles):
     top_neighbor_index = (new_index[0] - 1, new_index[1])
     left_neighbor_index = (new_index[0], new_index[1] - 1)
 
+    print(left_neighbor_index)
     
     top_neighbor = grid.get(top_neighbor_index)
     left_neighbor = grid.get(left_neighbor_index)
@@ -190,6 +196,7 @@ def canbefilled(grid, index, unused_tiles):
                 potentials.append(topk)
 
         if not potentials:
+            print("failed due to no match with top")
             return False
 
         if left_neighbor:
@@ -202,8 +209,9 @@ def canbefilled(grid, index, unused_tiles):
                     if variation in leftvs:
                         bothmatches.append(lp)
             potentials = bothmatches
-        if not potentials:
-            return False
+            if not potentials:
+                print("failed due to top matches did not match with left")
+                return False
 
     elif left_neighbor:
         left_tile, variation = all_tiles[left_neighbor[0]], left_neighbor[1]
@@ -212,15 +220,77 @@ def canbefilled(grid, index, unused_tiles):
                 potentials.append(leftk)
 
         if not potentials:
+            print("failed due to no left match")
             return False
 
     for potential in potentials:
-        from copy import deepcopy
         newgrid = deepcopy(grid)
-        grid[new_index] = potential
-        res = canbefilled(grid, new_index, unused_tiles)
+        newgrid[new_index] = potential
+        res = canbefilled(newgrid, new_index, unused_tiles)
         if res:
-            return True
+            return res
+
+    print("failed due to no match found")
+    return False
+
+def canbefilled(grid, index, unused_tiles):
+    # print("checking grid: " + str(grid), SIZE)
+    new_index = None
+    if index[1] == SIZE - 1: # rightmost, try next row
+        if index[0] == SIZE - 1: # means it is filled:
+            return deepcopy(grid)
+        new_index = (index[0] + 1, 0)
+    else:
+        new_index = (index[0], index[1] + 1)
+
+    top_neighbor_index = (new_index[0] - 1, new_index[1])
+    left_neighbor_index = (new_index[0], new_index[1] - 1)
+
+    top_neighbor = grid.get(top_neighbor_index)
+    left_neighbor = grid.get(left_neighbor_index)
+
+    potentials = []
+    if top_neighbor:
+        tops_bottom_edge = all_tiles[top_neighbor[0]].edge_variations[top_neighbor[1]][BOTTOM]
+        if tops_bottom_edge in p_tops:
+            potentials = p_tops[tops_bottom_edge]
+        else:
+            return False
+
+        if left_neighbor:
+            lefts_right_edge = all_tiles[left_neighbor[0]].edge_variations[left_neighbor[1]][RIGHT]
+
+            if lefts_right_edge in p_lefts:
+                left_potentials = p_lefts[lefts_right_edge]
+            else:
+                return False
+
+            intersection = []
+
+            for lp in left_potentials:
+                if lp in potentials:
+                    intersection.append(lp)
+
+            potentials = intersection
+    elif left_neighbor:
+        lefts_right_edge = all_tiles[left_neighbor[0]].edge_variations[left_neighbor[1]][RIGHT]
+        if lefts_right_edge in p_lefts:
+            potentials = p_lefts[lefts_right_edge]
+        else:
+            return False
+
+    if not potentials:
+        return False
+
+    for p in potentials:
+        if p[0] in unused_tiles:
+            newgrid = deepcopy(grid)
+            newunused = deepcopy(unused_tiles)
+            newunused.remove(p[0])
+            newgrid[new_index] = p
+            res = canbefilled(newgrid, new_index, newunused)
+            if res:
+                return res
 
     return False
 
@@ -230,6 +300,8 @@ failed = False
 grid = {}
 index = (0, 0)
 
+correct_grid = None
+
 for tile_id in tile_ids:
     unused_tiles = set(tile_ids)
     unused_tiles.remove(tile_id)
@@ -237,18 +309,15 @@ for tile_id in tile_ids:
         grid[index] = (tile_id, variation)
         res = canbefilled(grid, index, unused_tiles)
         if res:
-            c1 = grid.get((0,0))[0]
-            c2 = grid.get((0,SIZE-1))[0]
-            c3 = grid.get((SIZE-1,0))[0]
-            c4 = grid.get((SIZE-1,SIZE-1))[0]
+            c1 = res.get((0,0))[0]
+            c2 = res.get((0,SIZE-1))[0]
+            c3 = res.get((SIZE-1,0))[0]
+            c4 = res.get((SIZE-1,SIZE-1))[0]
 
             id1 = all_tiles[c1].id
             id2 = all_tiles[c2].id
             id3 = all_tiles[c3].id
             id4 = all_tiles[c4].id
+            # p1
             print(id1, id2, id3, id4 , id1 * id2 * id3 * id4)
             exit(0)
-        else:
-            print("failed grid: " + str(grid))
-            print("**************")
-            pass
