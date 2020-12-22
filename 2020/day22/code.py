@@ -8,8 +8,8 @@ alltext = ""
 with open(os.path.join(sys.path[0], 'input'), 'r') as in_file:
     input = in_file.readlines()
 
-deck_1 = []
-deck_2 = []
+deck1 = []
+deck2 = []
 input.append("")
 second = False
 for line in input:
@@ -21,31 +21,16 @@ for line in input:
         second=True
     else:
         if not second:
-            deck_1.append(int(line))
+            deck1.append(int(line))
         else:
-            deck_2.append(int(line))
-
-print(deck_1)
-print(deck_2)
-print(len(deck_1))
-print(len(deck_2))
+            deck2.append(int(line))
 
 PLAYER1 = 1
 PLAYER2 = 2
-played_decks = [] # stack of  set() of gameids
-lastd1 = None
-lastd2 = None
-
-
-lastc1 = 0
-lastc2 = 0
-firstsubcombat = False
 verbose = False
 
-def rec_combat(d1, d2):
-    global firstsubcombat, lastc1, lastc2
+def combat(d1, d2, recursive):
     played_decs_in_current = set()
-    winner = None
     while d1  and d2:
         d1key = ".".join(list(map(str, d1)))
         d2key = ".".join(list(map(str, d2)))
@@ -56,7 +41,7 @@ def rec_combat(d1, d2):
 
         if key in played_decs_in_current:
             if verbose: print("duplicate game, player1 wins")
-            return PLAYER1, True, d1, d2
+            return PLAYER1
 
         played_decs_in_current.add(key)
 
@@ -67,19 +52,11 @@ def rec_combat(d1, d2):
 
         assert card1 != card2
 
-        if card1 <= len(d1) and card2 <= len(d2):
+        if recursive and card1 <= len(d1) and card2 <= len(d2):
             if verbose: print("starting subcombat")
-            if firstsubcombat == False:
-                    lastc1 = card1
-                    lastc2 = card2
-                    firstsubcombat = True
-            subwinner, subinstakill, sd1, sd2 = rec_combat(d1[:card1], d2[:card2])
-            #if subinstakill:
-            #    print(f"player{subwinner} wins by instakill")
-            #    d1.append(card1)
-            #    d1.append(card2)
-            #    return subwinner, True, d1, d2
-            #else:
+            
+            subwinner = combat(d1[:card1], d2[:card2], recursive)
+            
             if subwinner == PLAYER1:
                 d1.append(card1)
                 d1.append(card2)        
@@ -98,31 +75,18 @@ def rec_combat(d1, d2):
         if verbose: print("player1 wins the round")
     else:
         if verbose: print("player2 wins the round")
-    return (PLAYER1, False, d1, d2) if d1 else (PLAYER2, False, d1, d2)
+    return PLAYER1 if d1 else PLAYER2
 
-winner, _, c1, c2 = rec_combat(deck_1, deck_2)
+def play(d1, d2, recursive):
+    winner = combat(d1, d2, recursive)
+    res = d1 if winner == PLAYER1 else d2
 
-res = deck_1 if winner == PLAYER1 else deck_2
-#if c1 != -1:
-#    res.append(c1)
-#    res.append(c2)
-print(res)
-print(len(res))
-print(deck_1)
-print(deck_2)
-print(len(deck_1))
-print(len(deck_2))
-print(lastc1, lastc2)
+    points = 0
 
-missings = []
-for i in range(50):
-    if (i+1) not in deck_1 and i+1 not in deck_2:
-        print(f"doesn't exist: {i+1}")
-        missings.append(i+1)
-points = 0
+    for i in range(len(res)):
+        points += res[i] * (len(res) - i)
 
-print(res)
-for i in range(len(res)):
-    points += res[i] * (len(res) - i)
+    print(points)
 
-print(points)
+play(deck1[:], deck2[:], False) # p1
+play(deck1[:], deck2[:], True) # p2
