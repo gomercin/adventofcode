@@ -18,38 +18,30 @@ for row, line in enumerate(input[2:]):
     for col, ch in enumerate(list(line)):
         image[(col, row)] = 0 if ch == '.' else 1
        
-
+        
 
 def part_1():
     global image
     enhanced = defaultdict(int)
     primage()
-    xmax = maxcol
-    ymax = maxrow
-    xmin = 0
-    ymin = 0
+
     outside = 0
-    pad = 5
-    for _ in range(50):
-        xmin -= pad
-        ymin -= pad
-        xmax += pad
-        ymax += pad
-        for x in range(xmin, xmax):
-            for y in range(ymin, ymax):
+
+    for _ in range(2):
+        for x in range(-10, maxcol + 10):
+            for y in range(-10, maxrow + 10):
                 num = 0
                 for yi in [y-1, y, y+1]:
                     for xi in [x-1, x, x+1]:
-                        #if (xi, yi) not in image:
-                        #    image[(xi, yi)] = outside
                         px = image.get((xi, yi), outside)
                         num = ((num << 1) | px)
 
                 enhanced[(x,y)] = 0 if algo[num] == '.' else 1
 
         outside = 0 if outside else 1
+
         image = enhanced.copy()
-        # primage()
+        primage()
 
 
 
