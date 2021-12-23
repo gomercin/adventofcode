@@ -100,10 +100,13 @@ costs = []
 current_min = sys.maxsize
 counter = 0
 def log(current_positions):
-    # print("#############")
+    if room_size < 4: return
+    print("#############")
     hallway = "#...........#"
     rooms1 = "###.#.#.#.###"
     rooms2 = "  #.#.#.#.#  "
+    rooms3 = "  #.#.#.#.#  "
+    rooms4 = "  #.#.#.#.#  "
     for i, pos in enumerate(current_positions):
         ch = chr(ord('A') + (i // room_size))
         index = pos[0] + 1
@@ -113,16 +116,20 @@ def log(current_positions):
             rooms1 = rooms1[:index] + ch + rooms1[index + 1:]
         elif pos[1] == -2:
             rooms2 = rooms2[:index] + ch + rooms2[index + 1:]
-    # print(hallway)
-    # print(rooms1)
-    # print(rooms2)
-    # print("  #########  ")
+        elif pos[1] == -3:
+            rooms3 = rooms3[:index] + ch + rooms3[index + 1:]
+        elif pos[1] == -4:
+            rooms4 = rooms4[:index] + ch + rooms4[index + 1:]
+    print(hallway)
+    print(rooms1)
+    print(rooms2)
+    print(rooms3)
+    print(rooms4)
+    print("  #########  ")
 
 costdict = {}
 def min_solution_cost(current_cost, current_positions, empties):
     global counter, current_min
-    if current_cost > current_min:
-        return sys.maxsize
     # print(f"counter: {counter}\n\t{current_positions}\n\t{empties}")
     key = f"{current_positions}"
     if key in costdict:
@@ -133,7 +140,7 @@ def min_solution_cost(current_cost, current_positions, empties):
         # print(f"found baby  {counter}")
         return 0
 
-    # log(current_positions)
+    #log(current_positions)
     potential_costs = []
     for i, pos in enumerate(current_positions):
         # print("OMER 1")
@@ -145,7 +152,11 @@ def min_solution_cost(current_cost, current_positions, empties):
             ry = pos[1] - 1
             all_correct = True
             while ry >= -room_size:
-                ambiti_below = current_positions.index((pos[0], ry))
+                try:
+                    ambiti_below = current_positions.index((pos[0], ry))
+                except:
+                    log(current_positions)
+                    raise
                 ry -= 1
 
                 if ambiti_below // 4 != i // 4:
@@ -175,7 +186,7 @@ def min_solution_cost(current_cost, current_positions, empties):
                                 all_correct = False
                                 break
                         except:
-                            # means that place is empty, i.e. usable
+                            all_correct = False
                             break
                     if all_correct:
                         moveto = (ambiti_room, y)
@@ -200,7 +211,7 @@ def min_solution_cost(current_cost, current_positions, empties):
 
         # print(f"goals to be checked for {i}: {realistic_goals_for_a_happy_life}")
         for goal, distance in realistic_goals_for_a_happy_life:
-            print(f"checking {goal} {distance} {i}")
+            # print(f"checking {goal} {distance} {i}")
             new_cost = distance * costs[i]
             new_empties = empties.copy()
             new_empties.remove(goal)
@@ -213,7 +224,6 @@ def min_solution_cost(current_cost, current_positions, empties):
     res = 0
     if potential_costs:
         res = min(potential_costs)
-        current_min = min(res, current_min)
     else:
         res = sys.maxsize
 
