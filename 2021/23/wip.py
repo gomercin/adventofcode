@@ -47,13 +47,17 @@ D should also always move towards its room
 # rooms have y as -1, -2, -1 being on top
 # hallway y = 0, odd numbers and 0 to 10 are stops
 
+#   2    4   6    8
+# AAAA BBBB CCCC DDDD
+# 1     2    3    4
+room_size = 2
 def ambiti_in_place(ambiti_id, ambitipos):
     exp_pos = (ambiti_id + 1) * 2
     return ambitipos[0] == exp_pos
 
 def all_in_place(positions):
     for i, pos in enumerate(positions):
-        if not ambiti_in_place(i // 2, pos):
+        if not ambiti_in_place(i // room_size, pos):
             return False
 
     return True
@@ -93,14 +97,15 @@ def can_move(start, end, positions):
 
 costs = [1, 1, 10, 10, 100, 100, 1000, 1000]
 
+current_min = sys.maxsize
 counter = 0
 def log(current_positions):
-    print("#############")
+    # print("#############")
     hallway = "#...........#"
     rooms1 = "###.#.#.#.###"
     rooms2 = "  #.#.#.#.#  "
     for i, pos in enumerate(current_positions):
-        ch = chr(ord('A') + (i // 2))
+        ch = chr(ord('A') + (i // room_size))
         index = pos[0] + 1
         if pos[1] == 0:
             hallway = hallway[:index] + ch + hallway[index + 1:]
@@ -108,15 +113,15 @@ def log(current_positions):
             rooms1 = rooms1[:index] + ch + rooms1[index + 1:]
         elif pos[1] == -2:
             rooms2 = rooms2[:index] + ch + rooms2[index + 1:]
-    print(hallway)
-    print(rooms1)
-    print(rooms2)
-    print("  #########  ")
+    # print(hallway)
+    # print(rooms1)
+    # print(rooms2)
+    # print("  #########  ")
 
 costdict = {}
 def min_solution_cost(current_positions, empties):
-    global counter
-    # print(f"counter: {counter}\n\t{current_positions}\n\t{empties}\n\t{current_cost}")
+    global counter, current_min
+    # print(f"counter: {counter}\n\t{current_positions}\n\t{empties}")
     key = f"{current_positions}"
     if key in costdict:
         return costdict[key]
@@ -130,15 +135,21 @@ def min_solution_cost(current_positions, empties):
     potential_costs = []
     for i, pos in enumerate(current_positions):
         # print("OMER 1")
-        ambiti_room = ((i // 2) + 1) * 2
-        if ambiti_in_place(i // 2, pos):
+        ambiti_room = ((i // room_size) + 1) * 2
+        if ambiti_in_place(i // room_size, pos):
             # no problem if on bottom
-            if pos[1] == -2: continue
+            if pos[1] == -room_size: continue
             # need to check if it is on top of another correct ambiti if pos is -1
-            otherpos = i + 1
-            if i % 2:
-                otherpos = i - 1
-            if ambiti_in_place(otherpos // 2, current_positions[otherpos]): continue
+            ry = pos[1] - 1
+            all_correct = True
+            while ry >= -room_size:
+                ambiti_below = current_positions.index((pos[0], ry))
+                ry -= 1
+
+                if ambiti_below // 4 != i // 4:
+                    all_correct = False
+                    break
+            if all_correct: continue
         # print("OMER 2")
         # if an ambiti has exited the room, it can only go back to its room
         # at each iteration, ambiti can go to its room if it is reachable
@@ -149,15 +160,23 @@ def min_solution_cost(current_positions, empties):
             # print("OMER 3")
             # this is already in the hallway, check if the goal is empty:
             moveto = None
-            if (ambiti_room, -2) in empties:
-                # print("OMER 31")
-                moveto = (ambiti_room, -2)
-            elif (ambiti_room, -1) in empties:
-                # print("OMER 32")
-                # check if the other occupant is also correct and move
-                other_i = current_positions.index((ambiti_room, -2))
-                if ambiti_in_place(other_i // 2, (ambiti_room, -2)):
-                    moveto = (ambiti_room, -1)
+            # print(f"{ambiti_room}, {pos}, {empties}")
+            for y in range(-room_size, 0):
+                if (ambiti_room, y) in empties: # eh, we could actualy break here more easily instead of loop below
+                    ry = y - 1
+                    all_correct = True
+                    while ry >= -room_size:
+                        try:
+                            ambiti_below = current_positions.index((pos[0], ry))
+                            ry -= 1
+                            if ambiti_below // 4 != i // 4:
+                                all_correct = False
+                                break
+                        except:
+                            break
+                    if all_correct:
+                        moveto = (ambiti_room, y)
+                        break
             # or it doesn't move at all, maybe it is better if the other ambiti takes the first place for ex.
             if moveto:
                 # print("OMER 33")
@@ -178,6 +197,7 @@ def min_solution_cost(current_positions, empties):
 
         # print(f"goals to be checked for {i}: {realistic_goals_for_a_happy_life}")
         for goal, distance in realistic_goals_for_a_happy_life:
+            # print(f"checking {goal} {distance}")
             new_cost = distance * costs[i]
             new_empties = empties.copy()
             new_empties.remove(goal)
@@ -190,6 +210,7 @@ def min_solution_cost(current_positions, empties):
     res = 0
     if potential_costs:
         res = min(potential_costs)
+        current_min = min(res, current_min)
     else:
         res = sys.maxsize
 
@@ -198,7 +219,10 @@ def min_solution_cost(current_positions, empties):
     return res
 
 sys.setrecursionlimit(15000)
+
 def part_1():
+    global room_size
+    room_size = 2
     cost = 0
     positions = [
     (4, -1),
@@ -235,11 +259,72 @@ def part_1():
 
     empties = [(x, 0) for x in stops]
 
+    global current_min
+    current_min = sys.maxsize
+
     print(min_solution_cost(positions, empties))
 
 
 def part_2():
-    pass
+
+    """
+    12345678
+    #D#C#B#A#
+    #D#B#A#C#
+    """
+    global room_size
+    room_size = 4
+    cost = 0
+    positions = [
+    (4, -1),
+    (8, -4),
+    (6, -3),
+    (8, -2),
+
+    (6, -1),
+    (6, -4),
+    (4, -3),
+    (6, -2),
+
+    (2, -1),
+    (8, -1),
+    (4, -2),
+    (8, -3),
+
+    (2, -4),
+    (4, -4),
+    (2, -2),
+    (2, -3)
+    ]
+
+
+    """
+     01234567890
+    #############
+    #...........#
+    ###B#C#B#D###
+      #A#D#C#A#
+      #########
+     01234567890
+    """
+    sample = [
+        (2, -2),
+        (8, -2),
+        (2, -1),
+        (6, -1),
+        (4, -1),
+        (6, -2),
+        (4, -2),
+        (8, -1)
+
+    ]
+
+    empties = [(x, 0) for x in stops]
+
+    global current_min
+    current_min = sys.maxsize
+
+    print(min_solution_cost(positions, empties))
 
 
 part_1()
