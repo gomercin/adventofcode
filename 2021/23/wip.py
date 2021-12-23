@@ -95,7 +95,7 @@ def can_move(start, end, positions):
 
     return len(path)
 
-costs = [1, 1, 10, 10, 100, 100, 1000, 1000]
+costs = []
 
 current_min = sys.maxsize
 counter = 0
@@ -119,8 +119,10 @@ def log(current_positions):
     # print("  #########  ")
 
 costdict = {}
-def min_solution_cost(current_positions, empties):
+def min_solution_cost(current_cost, current_positions, empties):
     global counter, current_min
+    if current_cost > current_min:
+        return sys.maxsize
     # print(f"counter: {counter}\n\t{current_positions}\n\t{empties}")
     key = f"{current_positions}"
     if key in costdict:
@@ -167,12 +169,13 @@ def min_solution_cost(current_positions, empties):
                     all_correct = True
                     while ry >= -room_size:
                         try:
-                            ambiti_below = current_positions.index((pos[0], ry))
+                            ambiti_below = current_positions.index((ambiti_room, ry))
                             ry -= 1
                             if ambiti_below // 4 != i // 4:
                                 all_correct = False
                                 break
                         except:
+                            # means that place is empty, i.e. usable
                             break
                     if all_correct:
                         moveto = (ambiti_room, y)
@@ -197,7 +200,7 @@ def min_solution_cost(current_positions, empties):
 
         # print(f"goals to be checked for {i}: {realistic_goals_for_a_happy_life}")
         for goal, distance in realistic_goals_for_a_happy_life:
-            # print(f"checking {goal} {distance}")
+            print(f"checking {goal} {distance} {i}")
             new_cost = distance * costs[i]
             new_empties = empties.copy()
             new_empties.remove(goal)
@@ -205,7 +208,7 @@ def min_solution_cost(current_positions, empties):
             new_positions = current_positions.copy()
             new_positions[i] = goal
 
-            potential_costs.append(new_cost + min_solution_cost(new_positions, new_empties))
+            potential_costs.append(new_cost + min_solution_cost(current_cost + new_cost,  new_positions, new_empties))
 
     res = 0
     if potential_costs:
@@ -218,7 +221,7 @@ def min_solution_cost(current_positions, empties):
 
     return res
 
-sys.setrecursionlimit(15000)
+sys.setrecursionlimit(10**3)
 
 def part_1():
     global room_size
@@ -259,10 +262,15 @@ def part_1():
 
     empties = [(x, 0) for x in stops]
 
+    global costs
+    costs = []
+    for x in range(4):
+        costs += ([10**x] * room_size)
+
     global current_min
     current_min = sys.maxsize
 
-    print(min_solution_cost(positions, empties))
+    print(min_solution_cost(0, positions, empties))
 
 
 def part_2():
@@ -324,7 +332,12 @@ def part_2():
     global current_min
     current_min = sys.maxsize
 
-    print(min_solution_cost(positions, empties))
+    global costs
+    costs = []
+    for x in range(4):
+        costs += ([10**x] * room_size)
+
+    print(min_solution_cost(0, positions, empties))
 
 
 part_1()
