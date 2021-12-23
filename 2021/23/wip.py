@@ -4,11 +4,6 @@ from itertools import permutations
 # perm = permutations([1, 2, 3], 2)
 
 
-input = []
-with open(os.path.join(sys.path[0], 'input.txt'), 'r') as in_file:
-    input = in_file.readlines()
-
-
 """
  01234567890
 #############
@@ -74,10 +69,13 @@ def get_path(start, end):
             else:
                 cur = (cur[0], cur[1] - 1)
         else:
-            if cur[0] < end[0]:
-                cur = (cur[0] + 1, cur[1])
+            if cur[1] < 0:
+                cur = (cur[0], cur[1] + 1)
             else:
-                cur = (cur[0] - 1, cur[1])
+                if cur[0] < end[0]:
+                    cur = (cur[0] + 1, cur[1])
+                else:
+                    cur = (cur[0] - 1, cur[1])
 
         path.append(cur)
 
@@ -116,16 +114,17 @@ def log(current_positions):
     print("  #########  ")
 
 costdict = {}
-def min_solution_cost(current_cost, current_positions, empties):
+def min_solution_cost(current_positions, empties):
     global counter
     # print(f"counter: {counter}\n\t{current_positions}\n\t{empties}\n\t{current_cost}")
     key = f"{current_positions}"
     if key in costdict:
-        return current_cost + costdict[key]
+        return costdict[key]
 
     counter += 1
     if all_in_place(current_positions):
-        return current_cost
+        # print(f"found baby  {counter}")
+        return 0
 
     # log(current_positions)
     potential_costs = []
@@ -169,7 +168,7 @@ def min_solution_cost(current_cost, current_positions, empties):
                 # print("OMER 35")
         else:
             # print("OMER 4")
-            # this can go to a hallway position
+            # this can go to any position
             for goal in empties:
                 # print("OMER 5")
                 if goal[1] == 0:
@@ -179,14 +178,14 @@ def min_solution_cost(current_cost, current_positions, empties):
 
         # print(f"goals to be checked for {i}: {realistic_goals_for_a_happy_life}")
         for goal, distance in realistic_goals_for_a_happy_life:
-            new_cost = current_cost + (distance * costs[i])
+            new_cost = distance * costs[i]
             new_empties = empties.copy()
             new_empties.remove(goal)
             new_empties.append(pos)
             new_positions = current_positions.copy()
             new_positions[i] = goal
 
-            potential_costs.append(min_solution_cost(new_cost, new_positions, new_empties))
+            potential_costs.append(new_cost + min_solution_cost(new_positions, new_empties))
 
     res = 0
     if potential_costs:
@@ -212,9 +211,31 @@ def part_1():
     (4, -2),
     ]
 
+
+    """
+     01234567890
+    #############
+    #...........#
+    ###B#C#B#D###
+      #A#D#C#A#
+      #########
+     01234567890
+    """
+    sample = [
+        (2, -2),
+        (8, -2),
+        (2, -1),
+        (6, -1),
+        (4, -1),
+        (6, -2),
+        (4, -2),
+        (8, -1)
+
+    ]
+
     empties = [(x, 0) for x in stops]
 
-    print(min_solution_cost(cost, positions, empties))
+    print(min_solution_cost(positions, empties))
 
 
 def part_2():
